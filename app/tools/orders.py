@@ -1,3 +1,4 @@
+
 import json
 import re
 from pathlib import Path
@@ -38,29 +39,47 @@ class OrderLookup:
 
     @staticmethod
     def normalize_order_id(order_id: str) -> str:
+        """Normalize harmless whitespace, case, and punctuation."""
+
         if not isinstance(order_id, str):
             return ""
 
         value = order_id.strip().upper()
 
-        # Remove harmless surrounding punctuation.
-        value = re.sub(r"^[\s.,:;#]+|[\s.,:;]+$", "", value)
+        value = re.sub(
+            r"^[\s.,:;#]+|[\s.,:;]+$",
+            "",
+            value,
+        )
 
         return value
 
     @staticmethod
     def is_valid_format(order_id: str) -> bool:
-        return bool(re.fullmatch(r"ORD-\d{4}", order_id))
+        """Validate the expected ORD-1234 format."""
+
+        return bool(
+            re.fullmatch(
+                r"ORD-\d{4}",
+                order_id,
+            )
+        )
 
     def lookup(self, order_id: str) -> dict:
+        """
+        Look up an order and return only customer-safe fields.
+        """
+
         normalized = self.normalize_order_id(order_id)
 
+        # Missing order ID.
         if not normalized:
             return {
                 "found": False,
                 "reason": "missing_order_id",
             }
 
+        # Invalid order ID format.
         if not self.is_valid_format(normalized):
             return {
                 "found": False,
@@ -70,6 +89,7 @@ class OrderLookup:
 
         order = self.orders.get(normalized)
 
+        # Valid format but no matching order.
         if not order:
             return {
                 "found": False,
@@ -82,7 +102,7 @@ class OrderLookup:
             "order_id": normalized,
         }
 
-        # Minimum necessary customer-safe information.
+        # Only expose explicitly customer-safe fields.
         for field in [
             "membership_tier",
             "placed_at",
@@ -98,30 +118,46 @@ class OrderLookup:
             if field in order:
                 result[field] = order[field]
 
+        # Return only safe item information.
         if "items" in order:
             result["items"] = [
                 {
                     key: item.get(key)
-                    for key in ["name", "quantity", "final_sale"]
+                    for key in [
+                        "name",
+                        "quantity",
+                        "final_sale",
+                    ]
                     if key in item
                 }
                 for item in order["items"]
             ]
 
-        # Status is authoritative.
-        if order.get("status") in {"cancelled", "returned"}:
+        status = order.get("status")
+
+        # Cancelled/returned orders must not expose stale
+        # shipping information.
+        if status in {"cancelled", "returned"}:
             result.pop("estimated_delivery", None)
             result.pop("carrier", None)
             result.pop("tracking_number", None)
 
+        # Shipped orders without an ETA should explicitly indicate
+        # that the estimate is unavailable.
         if (
-            order.get("status") == "shipped"
+            status == "shipped"
             and not order.get("estimated_delivery")
         ):
-            result["delivery_note"] = "Delivery estimate is unavailable."
+            result["delivery_note"] = (
+                "Delivery estimate is unavailable."
+            )
 
-        if order.get("status") == "exception":
+        # Delivery exceptions require human review.
+        if status == "exception":
             result["handoff"] = True
-            result["delivery_note"] = "Support review is required."
+            result["delivery_note"] = (
+                "Support review is required."
+            )
 
         return result
+

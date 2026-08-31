@@ -16,29 +16,72 @@ SENSITIVE_TERMS = [
 
 
 INJECTION_PATTERNS = [
+    # Classic instruction override attempts.
     r"ignore (all|any|the) previous",
+    r"ignore (all|any|the) prior",
+    r"ignore previous instructions",
     r"ignore prior instructions",
+
+    # Prompt/system extraction.
     r"reveal (your|the) (system|hidden) prompt",
+    r"show (your|the) (system|hidden) prompt",
+    r"give me (your|the) (system|hidden) prompt",
     r"system instruction",
+    r"hidden instruction",
+    r"reveal.*prompt",
+
+    # Instruction manipulation.
     r"do not call tools",
+    r"do not use tools",
     r"override.*instructions",
+    r"override.*policy",
+    r"disregard.*instructions",
+    r"disregard.*policy",
+    r"bypass.*policy",
+    r"follow.*internal note",
+    r"follow.*migration note",
+    r"treat.*migration.*authoritative",
+    r"treat.*internal.*authoritative",
+    r"migration note.*override",
+    r"internal note.*override",
+
+    # Attempts to elevate untrusted material.
+    r"make.*document.*authoritative",
+    r"make.*note.*authoritative",
+    r"the.*migration.*is.*newer",
+    r"the.*internal.*note.*is.*newer",
 ]
 
 
 def contains_prompt_injection(text):
-    text = text.lower()
+    """
+    Detect attempts to manipulate the assistant's instruction
+    hierarchy.
+
+    This function intentionally errs on the side of detecting
+    suspicious instruction-like language. The agent can still
+    answer the underlying customer question using authoritative
+    policy data.
+    """
+    if not isinstance(text, str):
+        return False
+
+    lowered = text.lower()
 
     return any(
-        re.search(pattern, text)
+        re.search(pattern, lowered)
         for pattern in INJECTION_PATTERNS
     )
 
 
 def contains_sensitive_request(text):
-    text = text.lower()
+    if not isinstance(text, str):
+        return False
+
+    lowered = text.lower()
 
     return any(
-        term in text
+        term in lowered
         for term in SENSITIVE_TERMS
     )
 
@@ -76,6 +119,9 @@ def validate_response(response):
     This is not a replacement for the system prompt; it is an
     additional defensive layer.
     """
+    if not isinstance(response, str):
+        return False
+
     lowered = response.lower()
 
     forbidden = [
@@ -83,6 +129,7 @@ def validate_response(response):
         "my hidden prompt is",
         "openrouter_api_key",
         "risk_score",
+        "risk score",
     ]
 
     for phrase in forbidden:
