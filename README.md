@@ -706,16 +706,7 @@ A 2–4 minute demonstration video will show:
 
 ### Demo video
 
-**Replace this placeholder with the final GitHub-hosted video/GIF URL:**
-
-```text
-https://YOUR-DEMO-URL-HERE
-```
-
-Example Markdown once the video is uploaded:
-
-```markdown
-[▶ Watch the 2–4 minute agent demonstration](https://YOUR-DEMO-URL-HERE)
+[▶ Watch the 2–4 minute agent demonstration](https://drive.google.com/file/d/1RHpRZaNaNdOp4xBzdo_TN4d0JdAjoiwf/view?usp=sharing)
 ```
 
 ---
@@ -784,3 +775,6 @@ python -m pytest tests/test_orders.py tests/test_retrieval.py -v
 ```
 
 The final repository is intended to demonstrate a customer-support agent that combines retrieval, deterministic business logic, tool use, conversation memory, and safety guardrails while explicitly avoiding unsupported claims.
+
+
+[https://drive.google.com/drive/folders/1A_Kzoe9TxY2YyS3eAG6Abg1xUkrXYScN?usp=sharing]: https://drive.google.com/drive/folders/1A_Kzoe9TxY2YyS3eAG6Abg1xUkrXYScN?usp=sharing
