@@ -511,6 +511,30 @@ class SupportAgent:
     # =========================================================
     # Order answers
     # =========================================================
+    @staticmethod
+    def _build_order_followup_answer(tool_result, user_message):
+     lowered = user_message.lower()
+
+     eta = tool_result.get("estimated_delivery")
+
+     if (
+        "when will it arrive" in lowered
+        or "when should it arrive" in lowered
+        or "when will it get here" in lowered
+     ):
+        if eta:
+            formatted_eta = SupportAgent._format_date(eta)
+            return (
+                f"Your order is estimated to arrive on "
+                f"{formatted_eta}."
+            )
+
+        return (
+            "A delivery estimate is currently unavailable "
+            "for this order."
+        )
+
+     return SupportAgent._build_order_answer(tool_result)
 
     @staticmethod
     def _build_order_answer(tool_result):
